@@ -8,10 +8,10 @@ You'll first need to install [ESLint](https://eslint.org/):
 npm i eslint --save-dev
 ```
 
-Next, install `eslint-plugin-t1-group-plugin`:
+Next, install `eslint-plugin-t1-group`:
 
 ```sh
-npm install eslint-plugin-t1-group-plugin --save-dev
+npm install eslint-plugin-t1-group --save-dev
 ```
 
 ## Usage
