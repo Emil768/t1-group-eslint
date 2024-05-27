@@ -1,6 +1,6 @@
 {
 	"name": "eslint-plugin-t1-group-plugin",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"description": "plugins for syntactically correct code of T1 company",
 	"keywords": [
 		"eslint",
