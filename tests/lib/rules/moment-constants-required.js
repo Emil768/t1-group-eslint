@@ -2,30 +2,31 @@
  * @fileoverview rule for required moment constants
  * @author moment-constants-required
  */
-"use strict";
+'use strict';
 
 //------------------------------------------------------------------------------
 // Requirements
 //------------------------------------------------------------------------------
 
-const rule = require("../../../lib/rules/moment-constants-required"),
-  RuleTester = require("eslint").RuleTester;
-
+const rule = require('../../../lib/rules/moment-constants-required'),
+	RuleTester = require('eslint').RuleTester;
 
 //------------------------------------------------------------------------------
 // Tests
 //------------------------------------------------------------------------------
 
-const ruleTester = new RuleTester();
-ruleTester.run("moment-constants-required", rule, {
-  valid: [
-    // give me some code that won't trigger a warning
-  ],
+const ruleTester = new RuleTester({
+	parserOptions: { ecmaVersion: 6, sourceType: 'module' },
+});
 
-  invalid: [
-    {
-      code: "",
-      errors: [{ messageId: "Fill me in.", type: "Me too" }],
-    },
-  ],
+// TODO: Дописать тесты
+ruleTester.run('moment-constants-required', rule, {
+	valid: [{ code: 'moment().format("DD.MM.YYYY HH:mm")', errors: [] }],
+
+	invalid: [
+		{
+			code: 'moment().format("DD.MM.YYYY HH:mm")',
+			errors: [{ message: 'Импортируйте только нужный модуль а не всю библиотеку' }],
+		},
+	],
 });
