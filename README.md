@@ -1,5 +1,3 @@
-# eslint-plugin-t1-group-plugin
-
 plugins for syntactically correct code of T1 company
 
 ## Installation
@@ -22,37 +20,17 @@ Add `t1-group-plugin` to the plugins section of your `.eslintrc` configuration f
 
 ```json
 {
-    "plugins": [
-        "t1-group-plugin"
-    ]
+	"plugins": ["t1-group-plugin"]
 }
 ```
-
 
 Then configure the rules you want to use under the rules section.
 
 ```json
 {
-    "rules": {
-        "t1-group-plugin/rule-name": 2
-    }
+	"rules": {
+		"t1-group-plugin/bem-syntax": "error",
+		"t1-group-plugin/import-packages": "error"
+	}
 }
 ```
-
-
-
-## Configurations
-
-<!-- begin auto-generated configs list -->
-TODO: Run eslint-doc-generator to generate the configs list (or delete this section if no configs are offered).
-<!-- end auto-generated configs list -->
-
-
-
-## Rules
-
-<!-- begin auto-generated rules list -->
-TODO: Run eslint-doc-generator to generate the rules list.
-<!-- end auto-generated rules list -->
-
-
