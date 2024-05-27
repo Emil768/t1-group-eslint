@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
 	hasViewSuffix,
 	convertToDashCase,
@@ -5,7 +7,12 @@ module.exports = {
 	processClassNameAttributes,
 	processChildren,
 	processChildrenForTernaryOperator,
+	getPageName,
 };
+
+function getPageName(filename) {
+	return path.basename(path.dirname(filename));
+}
 
 function hasViewSuffix(str) {
 	return str.endsWith('View');
@@ -76,7 +83,7 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 			if (attribute.value.type === 'JSXExpressionContainer') {
 				const quasis = attribute.value.expression.quasis;
 
-				if (quasis && quasis.length) {
+				if (quasis?.length) {
 					quasis.forEach((item) => {
 						if (item.value.raw.trim() !== '') {
 							const resultQuasisValidate = validateBEMClassName(

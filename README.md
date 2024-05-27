@@ -20,7 +20,7 @@ Add `t1-group-plugin` to the plugins section of your `.eslintrc` configuration f
 
 ```json
 {
-	"plugins": ["t1-group-plugin"]
+	"plugins": ["t1-group"]
 }
 ```
 
@@ -29,8 +29,8 @@ Then configure the rules you want to use under the rules section.
 ```json
 {
 	"rules": {
-		"t1-group-plugin/bem-syntax": "error",
-		"t1-group-plugin/import-packages": "error"
+		"t1-group/bem-syntax": "error",
+		"t1-group/import-packages": "error"
 	}
 }
 ```
