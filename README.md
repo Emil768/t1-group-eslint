@@ -30,7 +30,8 @@ Then configure the rules you want to use under the rules section.
 {
 	"rules": {
 		"t1-group/bem-syntax": "error",
-		"t1-group/import-packages": "error"
+		"t1-group/import-packages": "error",
+		"t1-group/moment-constants-required": "error"
 	}
 }
 ```

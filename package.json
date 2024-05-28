@@ -1,6 +1,6 @@
 {
 	"name": "eslint-plugin-t1-group",
-	"version": "2.2.5",
+	"version": "2.2.6",
 	"description": "plugins for syntactically correct code of T1 company",
 	"keywords": [
 		"eslint",
@@ -34,8 +34,9 @@
 	"peerDependencies": {
 		"eslint": ">=7"
 	},
-	"publishConfig": {
-		"registry": "https://github.com/Emil768/t1-group-eslint"
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Emil768/t1-group-eslint"
 	},
 	"license": "ISC"
 }
