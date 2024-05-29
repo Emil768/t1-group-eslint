@@ -29,9 +29,18 @@ Then configure the rules you want to use under the rules section.
 ```json
 {
 	"rules": {
-		"t1-group/bem-syntax": "error",
 		"t1-group/import-packages": "error",
-		"t1-group/moment-constants-required": "error"
-	}
+		"t1-group/unused-operators": "error"
+	},
+	// Recommended for use in pages folder
+	"overrides": [
+		{
+			"files": ["src/pages/**/*.js"],
+			"rules": {
+				"t1-group/moment-constants-required": "error",
+				"t1-group/bem-syntax": "error"
+			}
+		}
+	]
 }
 ```
