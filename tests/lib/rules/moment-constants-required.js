@@ -21,12 +21,12 @@ const ruleTester = new RuleTester({
 
 // TODO: Дописать тесты
 ruleTester.run('moment-constants-required', rule, {
-	valid: [{ code: 'export const huita = moment().format("DD.MM.YYYY HH:mm")', errors: [] }],
+	valid: [{ code: 'export const test = moment().format(TEST)', errors: [] }],
 
 	invalid: [
 		{
-			code: 'export const huita = moment().format("DD.MM.YYYY HH:mm")',
-			errors: [{ message: 'Импортируйте только нужный модуль а не всю библиотеку' }],
+			code: 'export const test = moment().format("DD.MM.YYYY HH:mm")',
+			errors: [{ message: 'Формат должен находится в константах' }],
 		},
 	],
 });

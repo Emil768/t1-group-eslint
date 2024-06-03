@@ -27,5 +27,9 @@ ruleTester.run('import-packages', rule, {
 			code: 'import test from "lodash" ',
 			errors: [{ message: 'Импортируйте только нужный модуль а не всю библиотеку' }],
 		},
+		{
+			code: 'import {test,test_2} from "lodash" ',
+			errors: [{ message: 'Импортируйте только нужный модуль а не всю библиотеку' }],
+		},
 	],
 });

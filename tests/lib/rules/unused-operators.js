@@ -2,30 +2,35 @@
  * @fileoverview rule for check unused operators in company
  * @author unused-operators
  */
-"use strict";
+'use strict';
 
 //------------------------------------------------------------------------------
 // Requirements
 //------------------------------------------------------------------------------
 
-const rule = require("../../../lib/rules/unused-operators"),
-  RuleTester = require("eslint").RuleTester;
-
+const rule = require('../../../lib/rules/unused-operators'),
+	RuleTester = require('eslint').RuleTester;
 
 //------------------------------------------------------------------------------
 // Tests
 //------------------------------------------------------------------------------
 
-const ruleTester = new RuleTester();
-ruleTester.run("unused-operators", rule, {
-  valid: [
-    // give me some code that won't trigger a warning
-  ],
+const ruleTester = new RuleTester({
+	parserOptions: { ecmaVersion: 6, sourceType: 'module' },
+});
 
-  invalid: [
-    {
-      code: "",
-      errors: [{ messageId: "Fill me in.", type: "Me too" }],
-    },
-  ],
+ruleTester.run('unused-operators', rule, {
+	valid: [
+		{
+			code: 'const test = moment().format("DD.MM.YYYY HH:mm")',
+			errors: [],
+		},
+	],
+
+	invalid: [
+		{
+			code: 'const test = !!moment().format("DD.MM.YYYY HH:mm")',
+			errors: [{ message: 'Используйте Boolean вместо !!' }],
+		},
+	],
 });

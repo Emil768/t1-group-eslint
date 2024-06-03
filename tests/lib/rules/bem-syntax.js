@@ -26,21 +26,15 @@ const ruleTester = new RuleTester({
 	},
 });
 
-// TODO: Дописать тесты
 ruleTester.run('bem-syntax', rule, {
 	valid: [
 		{
-			code: `const Avatar = ({ onAvatarChange, input }) => {
+			code: `const TableContentView = ({}) => {
 				return (
-					<div className="avatar">
-						{input.value ? (
-							<img className="avatar__image" src={input.value} alt="avatar" />
-						) : (
-							<Icon size="massive" name="image outline" data-testid="icon" />
-						)}
-						<Input onChange={onAvatarChange} type="file" id="input__file" />
-						<div className="avatar__icon-wrapper">
-							<Icon className="avatar__icon" name="pencil alternate" />
+					<div className="table-content">
+						<div className="table-content__header">
+							<span className="table-content__header-text">Автопарк</span>
+							<div className="table-content table-content__header__icon_red">Иконка</div>
 						</div>
 					</div>
 				);
@@ -51,22 +45,54 @@ ruleTester.run('bem-syntax', rule, {
 
 	invalid: [
 		{
-			code: `const Avatar = ({ onAvatarChange, input }) => {
+			code: `const TableContentView = ({}) => {
 				return (
-					<div className="avatar_2131231212">
-						{input.value ? (
-							<img className="avatar__image" src={input.value} alt="avatar" />
-						) : (
-							<Icon size="massive" name="image outline" data-testid="icon" />
-						)}
-						<Input onChange={onAvatarChange} type="file" id="input__file" />
-						<div className="avatar__icon-wrapper">
-							<Icon className="avatar__icon" name="pencil alternate" />
-						</div>
+					<div className="table-conten"></div>
+				);
+			}`.replace(/\t/g, '  '),
+			errors: [{ message: 'Наименование класса должно совпадать с родительским' }],
+		},
+		{
+			code: `const TableContentView = ({}) => {
+				return (
+					<div className="table-content">
+						<div className="table-content-view"></div>
 					</div>
 				);
 			}`.replace(/\t/g, '  '),
-			errors: [{ message: 'Наименование родительского класса и компонента не совпадают' }],
+			errors: [{ message: 'Наименование класса должно совпадать с родительским' }],
+		},
+		{
+			code: `const TableContentView = ({}) => {
+				return (
+					<div className="table-content">
+						<div className="table-content__21312++"></div>
+					</div>
+				);
+			}`.replace(/\t/g, '  '),
+			errors: [{ message: 'В наименовании классов не должно быть лишних символов' }],
+		},
+		{
+			code: `const TableContentView = ({}) => {
+				return (
+					<div className="table-content">
+							<span className="table-content__header-text">Автопарк</span>
+							<div className="table-content__header__icon_red">Иконка</div>
+						</div>
+				);
+			}`.replace(/\t/g, '  '),
+			errors: [{ message: 'Модификатор не может использоваться без родительского класса' }],
+		},
+		{
+			code: `const TableContentView = ({}) => {
+				return (
+					<div className="table-content">
+							<span className="table-content__header-text">Автопарк</span>
+							<div className="table-content__header__icon_red table-content__header__icon_red">Иконка</div>
+						</div>
+				);
+			}`.replace(/\t/g, '  '),
+			errors: [{ message: 'Невозможно одновременно использовать два одинаковых модификатора' }],
 		},
 	],
 });

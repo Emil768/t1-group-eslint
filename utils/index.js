@@ -33,21 +33,17 @@ function validateBEMClassName(className, componentName, parentNode) {
 	for (const classItem of classes) {
 		if (parentNode) {
 			if (classItem !== convertToDashCase(componentName)) {
-				return { valid: false, errorType: 'parentBlockMessageId' };
+				return { valid: false, errorType: 'prefixMessageId' };
 			}
 		}
 
-		if (classItem === componentName) {
+		if (classItem === convertToDashCase(componentName)) {
 			hasPrefix = true;
 			continue;
 		}
 
-		if (!classItem.startsWith(componentName)) {
+		if (classItem.split('__')[0] !== convertToDashCase(componentName)) {
 			return { valid: false, errorType: 'prefixMessageId' };
-		}
-
-		if (classItem.toLowerCase().includes('view')) {
-			return { valid: false, errorType: 'viewInClassNameMessageId' };
 		}
 
 		const restOfClassName = classItem.slice(componentName.length);
@@ -56,10 +52,11 @@ function validateBEMClassName(className, componentName, parentNode) {
 			return { valid: false, errorType: 'syntaxMessageId' };
 		}
 
-		const parts = restOfClassName.split('_');
+		const parts = restOfClassName.split(/_/);
 		if (parts.length > 1) {
-			const modifier = parts[1];
-			if (modifier !== '') {
+			const modifier = parts[parts.length - 1];
+
+			if (parts[parts.length - 2] !== '') {
 				if (modifiers[modifier]) {
 					return { valid: false, errorType: 'dublicateModificatorMessageId' };
 				}
@@ -81,9 +78,9 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 	attributes.forEach((attribute) => {
 		if (attribute.name.name === 'className' && attribute.value) {
 			if (attribute.value.type === 'JSXExpressionContainer') {
-				const quasis = attribute.value.expression.quasis;
+				const expression = attribute.value.expression;
 
-				if (quasis?.length) {
+				if (expression.quasis?.length) {
 					quasis.forEach((item) => {
 						if (item.value.raw.trim() !== '') {
 							const resultQuasisValidate = validateBEMClassName(
@@ -100,6 +97,13 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 							}
 						}
 					});
+				}
+
+				if (expression.openingElement) {
+					const attributes = expression.openingElement.attributes;
+					processClassNameAttributes(attributes, convertToDashCase(componentName), context, true);
+
+					processChildren(expression.children, node, convertToDashCase(componentName), context);
 				}
 			} else {
 				const resultValidate = validateBEMClassName(attribute.value.value, componentName, parentNode);
