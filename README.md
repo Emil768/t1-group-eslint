@@ -30,8 +30,7 @@ Then configure the rules you want to use under the rules section.
 {
 	"rules": {
 		"t1-group/import-packages": "error", // or 'no-restricted-imports': ['error', 'lodash'],
-		"t1-group/unused-operators": "error",
-		"no-restricted-imports": ["error", "lodash"]
+		"t1-group/unused-operators": "error"
 	},
 	// Recommended for use in pages folder
 	"overrides": [
