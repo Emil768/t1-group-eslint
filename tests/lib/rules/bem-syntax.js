@@ -35,7 +35,13 @@ ruleTester.run('bem-syntax', rule, {
 						<div className="table-content__header">
 							<span className="table-content__header-text">Автопарк</span>
 							<div className="table-content table-content__header__icon_red">Иконка</div>
-						</div>
+							{isTableDataLoading &&(
+								<Dimmer active inverted>
+									<Loader active={isTableDataLoading} size="medium" />
+								</Dimmer>
+							)}
+						
+							</div>
 					</div>
 				);
 			}`.replace(/\t/g, '  '),

@@ -42,7 +42,7 @@ function validateBEMClassName(className, componentName, parentNode) {
 			continue;
 		}
 
-		if (classItem.split('__')[0] !== convertToDashCase(componentName)) {
+		if (classItem.split(/_/)[0] !== convertToDashCase(componentName)) {
 			return { valid: false, errorType: 'prefixMessageId' };
 		}
 
@@ -53,7 +53,7 @@ function validateBEMClassName(className, componentName, parentNode) {
 		}
 
 		const parts = restOfClassName.split(/_/);
-		if (parts.length > 1) {
+		if (parts.length > 2) {
 			const modifier = parts[parts.length - 1];
 
 			if (parts[parts.length - 2] !== '') {
@@ -81,7 +81,7 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 				const expression = attribute.value.expression;
 
 				if (expression.quasis?.length) {
-					quasis.forEach((item) => {
+					expression.quasis.forEach((item) => {
 						if (item.value.raw.trim() !== '') {
 							const resultQuasisValidate = validateBEMClassName(
 								item.value.raw.trim(),
@@ -101,9 +101,9 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 
 				if (expression.openingElement) {
 					const attributes = expression.openingElement.attributes;
-					processClassNameAttributes(attributes, convertToDashCase(componentName), context, true);
+					processClassNameAttributes(attributes, componentName, context);
 
-					processChildren(expression.children, node, convertToDashCase(componentName), context);
+					processChildren(expression.children, attribute, componentName, context);
 				}
 			} else {
 				const resultValidate = validateBEMClassName(attribute.value.value, componentName, parentNode);
@@ -115,6 +115,11 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 					});
 				}
 			}
+		} else if (attribute?.value?.expression?.openingElement) {
+			const attributes = attribute.value.expression?.openingElement.attributes;
+			processClassNameAttributes(attributes, componentName, context);
+
+			processChildren(attribute.value.expression?.children, attribute, componentName, context);
 		}
 	});
 }
