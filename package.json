@@ -1,11 +1,12 @@
 {
 	"name": "eslint-plugin-t1-group",
-	"version": "2.4.13",
+	"version": "2.4.46",
 	"description": "plugins for syntactically correct code of T1 company",
 	"keywords": [
 		"eslint",
 		"eslintplugin",
-		"eslint-plugin"
+		"eslint-plugin",
+		"bem"
 	],
 	"author": "t1-group-plugin",
 	"main": "./lib/index.js",

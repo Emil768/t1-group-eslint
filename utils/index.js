@@ -8,6 +8,8 @@ module.exports = {
 	processChildren,
 	processChildrenForTernaryOperator,
 	getPageName,
+	processCallExpression,
+	processClassNameAttributesAndChildren,
 };
 
 function getPageName(filename) {
@@ -20,23 +22,17 @@ function hasViewSuffix(str) {
 
 function convertToDashCase(str) {
 	return str
-		.replace(/view$/i, '')
+		.replace(/(view|wrapper)$/i, '')
 		.replace(/([a-z])([A-Z])/g, '$1-$2')
 		.toLowerCase();
 }
 
-function validateBEMClassName(className, componentName, parentNode) {
+function validateBEMClassName(className, componentName, conditions) {
 	const classes = className.split(' ');
 	let hasPrefix = false;
 	const modifiers = {};
 
 	for (const classItem of classes) {
-		if (parentNode) {
-			if (classItem !== convertToDashCase(componentName)) {
-				return { valid: false, errorType: 'prefixMessageId' };
-			}
-		}
-
 		if (classItem === convertToDashCase(componentName)) {
 			hasPrefix = true;
 			continue;
@@ -52,61 +48,54 @@ function validateBEMClassName(className, componentName, parentNode) {
 			return { valid: false, errorType: 'syntaxMessageId' };
 		}
 
-		const parts = restOfClassName.split(/_/);
-		if (parts.length > 2) {
-			const modifier = parts[parts.length - 1];
+		if (!conditions) {
+			const parts = restOfClassName.split(/_/);
 
-			if (parts[parts.length - 2] !== '') {
-				if (modifiers[modifier]) {
-					return { valid: false, errorType: 'dublicateModificatorMessageId' };
+			let length = parts.length > 2 ? 2 : 1;
+
+			if (parts.length > 2 || parts.length === 2) {
+				const modifier = parts[parts.length - 1];
+
+				if (parts[parts.length - length] !== '') {
+					if (modifiers[modifier]) {
+						return { valid: false, errorType: 'dublicateModificatorMessageId' };
+					}
+					modifiers[modifier] = true;
+				} else {
+					return { valid: true };
 				}
-				modifiers[modifier] = true;
-			} else {
-				return { valid: true };
 			}
 		}
 	}
 
-	if (!hasPrefix) {
+	if (!hasPrefix && !conditions) {
 		return { valid: false, errorType: 'missingModifierMessageId' };
 	}
 
 	return { valid: true };
 }
 
-function processClassNameAttributes(attributes, componentName, context, parentNode = false) {
+const expressionsToProcess = ['consequent', 'alternate', 'right'];
+
+const expressionTypes = ['ConditionalExpression', 'LogicalExpression', 'IfStatement'];
+
+function processClassNameAttributes(attributes, node, componentName, context) {
 	attributes.forEach((attribute) => {
-		if (attribute.name.name === 'className' && attribute.value) {
+		if (attribute.name?.name === 'className' && attribute?.value) {
 			if (attribute.value.type === 'JSXExpressionContainer') {
-				const expression = attribute.value.expression;
+				processValidateExpression(attribute.value.expression, attribute, componentName, context, true);
+			} else if (attribute?.value?.expression?.openingElement) {
+				const attributes = attribute.value.expression?.openingElement.attributes;
 
-				if (expression.quasis?.length) {
-					expression.quasis.forEach((item) => {
-						if (item.value.raw.trim() !== '') {
-							const resultQuasisValidate = validateBEMClassName(
-								item.value.raw.trim(),
-								componentName,
-								parentNode,
-							);
-
-							if (!resultQuasisValidate.valid) {
-								context.report({
-									node: attribute,
-									messageId: resultQuasisValidate.errorType,
-								});
-							}
-						}
-					});
-				}
-
-				if (expression.openingElement) {
-					const attributes = expression.openingElement.attributes;
-					processClassNameAttributes(attributes, componentName, context);
-
-					processChildren(expression.children, attribute, componentName, context);
-				}
+				processClassNameAttributesAndChildren(
+					attributes,
+					attribute.value.expression?.children,
+					attribute,
+					convertToDashCase(componentName),
+					context,
+				);
 			} else {
-				const resultValidate = validateBEMClassName(attribute.value.value, componentName, parentNode);
+				const resultValidate = validateBEMClassName(attribute.value.value, componentName);
 
 				if (!resultValidate.valid) {
 					context.report({
@@ -115,45 +104,256 @@ function processClassNameAttributes(attributes, componentName, context, parentNo
 					});
 				}
 			}
-		} else if (attribute?.value?.expression?.openingElement) {
-			const attributes = attribute.value.expression?.openingElement.attributes;
-			processClassNameAttributes(attributes, componentName, context);
+		}
 
-			processChildren(attribute.value.expression?.children, attribute, componentName, context);
+		if (attribute?.value?.type === 'JSXExpressionContainer') {
+			if (attribute.value.expression) {
+				processValidateExpression(attribute.value.expression, attribute, componentName, context);
+			}
 		}
 	});
 }
 
 function processChildren(children, node, componentName, context) {
-	if (!children) return;
-
 	children.forEach((child) => {
 		if (child.type === 'JSXElement') {
 			const attributes = child.openingElement.attributes;
-			processClassNameAttributes(attributes, componentName, context);
 
-			if (child.children) {
-				processChildren(child.children, node, componentName, context);
-			}
+			processClassNameAttributesAndChildren(
+				attributes,
+				child.children,
+				node,
+				convertToDashCase(componentName),
+				context,
+			);
 		}
 
 		if (child.type === 'JSXExpressionContainer') {
-			const expression = child.expression;
-
-			if (expression.type === 'ConditionalExpression' || expression.type === 'LogicalExpression') {
-				const expressionToProcess = expression.consequent || expression.alternate || expression.right;
-
-				if (expressionToProcess) {
-					processChildren(expressionToProcess.children, expressionToProcess, componentName, context);
-				}
-			}
+			processValidateExpression(child.expression, node, componentName, context);
 		}
 	});
 
 	if (node.type === 'JSXElement') {
 		const attributes = node.openingElement.attributes;
-		processClassNameAttributes(attributes, componentName, context);
+		processClassNameAttributes(attributes, node, componentName, context);
 	}
+}
+
+function processCallExpression(expression, node, componentName, context) {
+	if (expression?.arguments[0] && expression?.arguments[0]?.type === 'ArrowFunctionExpression') {
+		if (Array.isArray(expression?.arguments[0]?.body?.body)) {
+			processBodyAttributes(expression?.arguments[0]?.body?.body, node, componentName, context);
+		} else {
+			const attributes = expression?.arguments[0]?.body?.openingElement?.attributes;
+
+			processClassNameAttributesAndChildren(
+				attributes,
+				expression?.arguments[0]?.body?.children,
+				node,
+				convertToDashCase(componentName),
+				context,
+			);
+		}
+	}
+}
+
+function processValidateExpression(expression, node, componentName, context, className = false) {
+	if (expression.expressions?.length) {
+		expression.expressions.forEach((expression) => {
+			if (expressionTypes.includes(expression.type)) {
+				expressionsToProcess.forEach((item) => {
+					if (expression[item]?.value && className) {
+						const resultExpressionValidate = validateBEMClassName(
+							expression[item]?.value.toString('').trim(),
+							componentName,
+							true,
+						);
+
+						if (!resultExpressionValidate.valid) {
+							context.report({
+								node: expression[item],
+								messageId: resultExpressionValidate.errorType,
+							});
+						}
+					}
+				});
+			}
+		});
+	}
+
+	if (expressionTypes.includes(expression.type)) {
+		expressionsToProcess.forEach((item) => {
+			if (expression[item]?.value && className) {
+				const resultExpressionValidate = validateBEMClassName(
+					expression[item]?.value.toString('').trim(),
+					componentName,
+					true,
+				);
+
+				if (!resultExpressionValidate.valid) {
+					context.report({
+						node: expression[item],
+						messageId: resultExpressionValidate.errorType,
+					});
+				}
+			}
+			if (expression[item]?.type === 'JSXElement' && expression[item]?.openingElement) {
+				const attributes = expression[item].openingElement.attributes;
+
+				processClassNameAttributesAndChildren(
+					attributes,
+					expression[item].children,
+					expression[item],
+					convertToDashCase(componentName),
+					context,
+				);
+			}
+
+			if (expression[item]?.type === 'JSXFragment' && expression[item]?.openingFragment) {
+				processClassNameAttributesAndChildren(
+					null,
+					expression[item].children,
+					expression[item],
+					convertToDashCase(componentName),
+					context,
+				);
+			}
+
+			if (expression[item]?.type === 'CallExpression' && expression[item]?.arguments?.length) {
+				processCallExpression(expression[item], expression[item], componentName, context);
+			}
+			if (Array.isArray(expression[item]?.body)) {
+				processBodyAttributes(expression[item]?.body, node, componentName, context);
+			}
+		});
+	}
+
+	if (expression.quasis?.length) {
+		expression.quasis.forEach((item) => {
+			if (item.value.raw.trim() !== '') {
+				const resultQuasisValidate = validateBEMClassName(item.value.raw.trim(), componentName);
+
+				if (!resultQuasisValidate.valid) {
+					context.report({
+						node: item,
+						messageId: resultQuasisValidate.errorType,
+					});
+				}
+			}
+		});
+	}
+
+	if (expression?.type === 'ArrayExpression') {
+		processArrayExpression(expression.elements, componentName, context);
+	}
+
+	if (expression?.type === 'ArrowFunctionExpression') {
+		if (Array.isArray(expression?.body?.body)) {
+			const layout = expression?.body?.body[0]?.argument;
+
+			if (layout?.type === 'JSXElement' && layout?.openingElement) {
+				const attributes = layout.openingElement.attributes;
+
+				processClassNameAttributesAndChildren(
+					attributes,
+					layout.children,
+					node,
+					convertToDashCase(componentName),
+					context,
+				);
+			}
+
+			if (layout?.type === 'JSXFragment' && layout?.openingFragment) {
+				processClassNameAttributesAndChildren(
+					null,
+					layout.children,
+					node,
+					convertToDashCase(componentName),
+					context,
+				);
+			}
+		}
+	}
+
+	if (expression?.type === 'ObjectExpression') {
+		processObjectExpression(expression.properties, componentName, context);
+	}
+
+	if (expression?.type === 'CallExpression' && expression?.arguments?.length) {
+		processCallExpression(expression, node, componentName, context);
+	}
+
+	if (expression.openingElement) {
+		processClassNameAttributesAndChildren(
+			expression.openingElement.attributes,
+			expression.children,
+			node,
+			convertToDashCase(componentName),
+			context,
+		);
+	}
+}
+
+function processBodyAttributes(bodyAttributes, node, componentName, context) {
+	bodyAttributes.forEach((item) => {
+		if (expressionTypes.includes(item.type)) {
+			processValidateExpression(item, node, componentName, context);
+		} else {
+			processClassNameAttributesAndChildren(
+				item.argument?.openingElement?.attributes,
+				item.argument?.children,
+				node,
+				convertToDashCase(componentName),
+				context,
+			);
+		}
+	});
+}
+
+function processClassNameAttributesAndChildren(attributes, children, node, componentName, context) {
+	if (attributes?.length) {
+		processClassNameAttributes(attributes, node, convertToDashCase(componentName), context);
+	}
+
+	if (children?.length) {
+		processChildren(children, node, convertToDashCase(componentName), context);
+	}
+}
+
+function processArrayExpression(elements, componentName, context) {
+	elements.forEach((element) => {
+		if (element.properties?.length) {
+			element.properties.forEach((property) => {
+				if (property?.value?.type === 'JSXElement' && property?.value?.openingElement) {
+					const attributes = property?.value?.openingElement?.attributes;
+
+					processClassNameAttributesAndChildren(
+						attributes,
+						property.value?.children,
+						property,
+						convertToDashCase(componentName),
+						context,
+					);
+				}
+			});
+		}
+	});
+}
+
+function processObjectExpression(properties, componentName, context) {
+	properties.forEach((property) => {
+		if (property?.value?.type === 'JSXElement' && property?.value?.openingElement) {
+			const attributes = property?.value?.openingElement?.attributes;
+
+			processClassNameAttributesAndChildren(
+				attributes,
+				property.value?.children,
+				property,
+				convertToDashCase(componentName),
+				context,
+			);
+		}
+	});
 }
 
 function processChildrenForTernaryOperator(children, node, context) {
