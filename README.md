@@ -20,6 +20,7 @@ Add `t1-group-plugin` to the plugins section of your `.eslintrc` configuration f
 
 ```json
 {
+	"extends": ["plugin:t1-group/recommended"],
 	"plugins": ["t1-group"]
 }
 ```
