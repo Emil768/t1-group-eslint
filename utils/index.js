@@ -10,6 +10,7 @@ module.exports = {
 	getPageName,
 	processCallExpression,
 	processClassNameAttributesAndChildren,
+	processValidateExpression,
 };
 
 function getPageName(filename) {
@@ -48,14 +49,18 @@ function validateBEMClassName(className, componentName, conditions) {
 			return { valid: false, errorType: 'syntaxMessageId' };
 		}
 
-		if (!conditions) {
-			const parts = restOfClassName.split(/_/);
+		const parts = restOfClassName.split(/_/);
 
-			let length = parts.length > 2 ? 2 : 1;
+		let length = parts.length > 2 ? 2 : 1;
 
-			if (parts.length > 2 || parts.length === 2) {
-				const modifier = parts[parts.length - 1];
+		if (parts.length > 2 || parts.length === 2) {
+			const modifier = parts[parts.length - 1];
 
+			if (!modifier.match(/^[a-zA-Z]+(-[a-zA-Z]+)*$/)) {
+				return { valid: false, errorType: 'syntaxMessageId' };
+			}
+
+			if (!conditions) {
 				if (parts[parts.length - length] !== '') {
 					if (modifiers[modifier]) {
 						return { valid: false, errorType: 'dublicateModificatorMessageId' };
@@ -108,7 +113,11 @@ function processClassNameAttributes(attributes, node, componentName, context) {
 
 		if (attribute?.value?.type === 'JSXExpressionContainer') {
 			if (attribute.value.expression) {
-				processValidateExpression(attribute.value.expression, attribute, componentName, context);
+				if (attribute.value.expression.elements) {
+					processArrayExpression(attribute.value.expression.elements, componentName, context);
+				} else {
+					processValidateExpression(attribute.value.expression, attribute, componentName, context);
+				}
 			}
 		}
 	});
@@ -143,6 +152,8 @@ function processCallExpression(expression, node, componentName, context) {
 	if (expression?.arguments[0] && expression?.arguments[0]?.type === 'ArrowFunctionExpression') {
 		if (Array.isArray(expression?.arguments[0]?.body?.body)) {
 			processBodyAttributes(expression?.arguments[0]?.body?.body, node, componentName, context);
+		} else if (expression?.arguments[0]?.body?.type === 'ObjectExpression') {
+			processObjectExpression(expression?.arguments[0]?.body?.properties, componentName, context);
 		} else {
 			const attributes = expression?.arguments[0]?.body?.openingElement?.attributes;
 
@@ -159,19 +170,23 @@ function processCallExpression(expression, node, componentName, context) {
 
 function processValidateExpression(expression, node, componentName, context, className = false) {
 	if (expression.expressions?.length) {
-		expression.expressions.forEach((expression) => {
-			if (expressionTypes.includes(expression.type)) {
-				expressionsToProcess.forEach((item) => {
-					if (expression[item]?.value && className) {
+		expression.expressions.forEach((item) => {
+			if (expressionTypes.includes(item.type)) {
+				const isQuasis = expression?.quasis?.some((item) => {
+					return item.value?.raw?.trim() === convertToDashCase(componentName);
+				});
+
+				expressionsToProcess.forEach((expression) => {
+					if (item[expression]?.value && className) {
 						const resultExpressionValidate = validateBEMClassName(
-							expression[item]?.value.toString('').trim(),
+							item[expression]?.value.toString('').trim(),
 							componentName,
-							true,
+							isQuasis,
 						);
 
 						if (!resultExpressionValidate.valid) {
 							context.report({
-								node: expression[item],
+								node: item[expression],
 								messageId: resultExpressionValidate.errorType,
 							});
 						}
@@ -187,7 +202,6 @@ function processValidateExpression(expression, node, componentName, context, cla
 				const resultExpressionValidate = validateBEMClassName(
 					expression[item]?.value.toString('').trim(),
 					componentName,
-					true,
 				);
 
 				if (!resultExpressionValidate.valid) {
@@ -230,8 +244,8 @@ function processValidateExpression(expression, node, componentName, context, cla
 
 	if (expression.quasis?.length) {
 		expression.quasis.forEach((item) => {
-			if (item.value.raw.trim() !== '') {
-				const resultQuasisValidate = validateBEMClassName(item.value.raw.trim(), componentName);
+			if (item.value.raw.trim() !== '' && className) {
+				const resultQuasisValidate = validateBEMClassName(item.value.raw.trim(), componentName, true);
 
 				if (!resultQuasisValidate.valid) {
 					context.report({
@@ -298,6 +312,8 @@ function processBodyAttributes(bodyAttributes, node, componentName, context) {
 	bodyAttributes.forEach((item) => {
 		if (expressionTypes.includes(item.type)) {
 			processValidateExpression(item, node, componentName, context);
+		} else if (item.argument?.arguments) {
+			processCallExpression(item.argument, node, componentName, context);
 		} else {
 			processClassNameAttributesAndChildren(
 				item.argument?.openingElement?.attributes,
@@ -337,6 +353,9 @@ function processArrayExpression(elements, componentName, context) {
 				}
 			});
 		}
+		if (element.type === 'SpreadElement' && element?.argument && element?.argument?.arguments) {
+			processCallExpression(element.argument, element.argument, componentName, context);
+		}
 	});
 }
 
@@ -352,6 +371,9 @@ function processObjectExpression(properties, componentName, context) {
 				convertToDashCase(componentName),
 				context,
 			);
+		}
+		if (expressionTypes.includes(property?.value?.type)) {
+			processValidateExpression(property?.value, property, componentName, context);
 		}
 	});
 }
